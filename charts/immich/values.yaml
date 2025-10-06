@@ -1,56 +1,210 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/app-template-4.3.0/charts/other/app-template/values.schema.json
+
 ## This chart relies on the common library chart from bjw-s-labs
 ## You can find it at https://github.com/bjw-s-labs/helm-charts/tree/main/charts/library/common
 ## Refer there for more detail about the supported values
-
-# These entries are shared between all the Immich components
-
-env:
-  REDIS_HOSTNAME: '{{ printf "%s-redis-master" .Release.Name }}'
-  DB_HOSTNAME: "{{ .Release.Name }}-postgresql"
-  DB_USERNAME: "{{ .Values.postgresql.global.postgresql.auth.username }}"
-  DB_DATABASE_NAME: "{{ .Values.postgresql.global.postgresql.auth.database }}"
-  # -- You should provide your own secret outside of this helm-chart and use `postgresql.global.postgresql.auth.existingSecret` to provide credentials to the postgresql instance
-  DB_PASSWORD: "{{ .Values.postgresql.global.postgresql.auth.password }}"
-  IMMICH_MACHINE_LEARNING_URL: '{{ printf "http://%s-machine-learning:3003" .Release.Name }}'
-
-# TODO provide top level configs for things like persistence, using included DB, using included redis, DB settings (such as HDD vs SSD mode)
-# Also validate them in the checks.yaml
 
 image:
   repository: ghcr.io/immich-app/immich-server
   tag: v2.0.1
 
+# TODO provide top level configs for things like persistence, using included DB, using included redis, DB settings (such as HDD vs SSD mode)
+# Also validate them in the checks.yaml
 immich:
-  metrics:
-    # Enabling this will create the service monitors needed to monitor immich with the prometheus operator
-    enabled: false
-  persistence:
-    # Main data store for all photos shared between different components.
-    library:
-      existingClaim: immich-library
-      enabled: false
-      create: true # create a PVC called immich-library from this chart
-      accessMode: ReadWriteMany
-      size: 1Ti
-      storageClass: # provide your storage class
-    external:
-      existingClaim: immich-external
-      enabled: false
-      create: true # create a PVC called immich-external from this chart
-      accessMode: ReadWriteMany
-      size: 1Ti
-      storageClass: # provide your storage class
   # configuration is immich-config.json converted to yaml
   # ref: https://immich.app/docs/install/config-file/
-  #
-  configuration:
-    {}
+  configuration: {}
     # trash:
     #   enabled: false
     #   days: 30
     # storageTemplate:
     #   enabled: true
     #   template: "{{y}}/{{y}}-{{MM}}-{{dd}}/{{filename}}"
+
+controllers:
+  server:
+    enabled: true
+    strategy: RollingUpdate
+    replicas: 1
+    containers:
+      main:
+        enabled: true
+        ports:
+          - name: http
+            containerPort: 2283
+          - name: metrics-api
+            containerPort: 8081
+          - name: metrics-ms
+            containerPort: 8082
+        image:
+          repository: ghcr.io/immich-app/immich-server
+          tag: "{{ .Values.image.tag}}"
+          pullPolicy: IfNotPresent
+        env:
+          REDIS_HOSTNAME: '{{ printf "%s-redis-master" .Release.Name }}'
+          DB_HOSTNAME: "{{ .Release.Name }}-postgresql"
+          DB_USERNAME: "{{ .Values.postgresql.global.postgresql.auth.username }}"
+          DB_DATABASE_NAME: "{{ .Values.postgresql.global.postgresql.auth.database }}"
+          # -- You should provide your own secret outside of this helm-chart and use `postgresql.global.postgresql.auth.existingSecret` to provide credentials to the postgresql instance
+          DB_PASSWORD: "{{ .Values.postgresql.global.postgresql.auth.password }}"
+          IMMICH_MACHINE_LEARNING_URL: '{{ printf "http://%s-machine-learning:3003" .Release.Name }}'
+          IMMICH_TELEMETRY_INCLUDE: "all"
+          IMMICH_CONFIG_FILE: /config/immich-config.yaml
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/server/ping
+                port: http
+              initialDelaySeconds: 0
+              periodSeconds: 10
+              timeoutSeconds: 1
+              failureThreshold: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/server/ping
+                port: http
+              initialDelaySeconds: 0
+              periodSeconds: 10
+              timeoutSeconds: 1
+              failureThreshold: 3
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/server/ping
+                port: http
+              initialDelaySeconds: 0
+              periodSeconds: 10
+              timeoutSeconds: 1
+              failureThreshold: 30
+
+  machine-learning:
+    enabled: true
+    strategy: RollingUpdate
+    replicas: 1
+    containers:
+      main:
+        enabled: true
+        ports:
+          - name: http
+            containerPort: 3003
+        image:
+          repository: ghcr.io/immich-app/immich-machine-learning
+          tag: "{{ .Values.image.tag}}"
+          pullPolicy: IfNotPresent
+        env:
+          REDIS_HOSTNAME: '{{ printf "%s-redis-master" .Release.Name }}'
+          DB_HOSTNAME: "{{ .Release.Name }}-postgresql"
+          DB_USERNAME: "{{ .Values.postgresql.global.postgresql.auth.username }}"
+          DB_DATABASE_NAME: "{{ .Values.postgresql.global.postgresql.auth.database }}"
+          # -- You should provide your own secret outside of this helm-chart and use `postgresql.global.postgresql.auth.existingSecret` to provide credentials to the postgresql instance
+          DB_PASSWORD: "{{ .Values.postgresql.global.postgresql.auth.password }}"
+          IMMICH_MACHINE_LEARNING_URL: '{{ printf "http://%s-machine-learning:3003" .Release.Name }}'
+          TRANSFORMERS_CACHE: /cache
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /ping
+                port: http
+              initialDelaySeconds: 0
+              periodSeconds: 10
+              timeoutSeconds: 1
+              failureThreshold: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /ping
+                port: http
+              initialDelaySeconds: 0
+              periodSeconds: 10
+              timeoutSeconds: 1
+              failureThreshold: 3
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /ping
+                port: http
+              initialDelaySeconds: 0
+              periodSeconds: 10
+              timeoutSeconds: 1
+              failureThreshold: 60
+
+podAnnotations:
+  checksum/config: "{{ .Values.immich.configuration | toYaml | sha256sum }}"
+
+serviceMonitor:
+  server:
+    serviceName: server
+    endpoints:
+      - port: metrics-api
+        scheme: http
+      - port: metrics-ms
+        scheme: http
+
+persistence:
+  immich-config:
+    type: configMap
+    name: "{{ .Release.Name }}-immich-config"
+    globalMounts:
+      - path: /config
+        readOnly: false
+  library:
+    type: persistentVolumeClaim
+    # existingClaim: "name-of-existing-claim" # Set an existing claim here to use it instead of creating a new one
+    storageClass: null # provide your storage class
+    accessMode: ReadWriteMany
+    size: 10Gi
+    advancedMounts:
+      server:
+        main:
+          - path: /usr/src/app/upload
+  external:
+    type: persistentVolumeClaim
+    # existingClaim: "name-of-existing-claim" # Set an existing claim here to use it instead of creating a new one
+    storageClass: null # provide your storage class
+    accessMode: ReadWriteMany
+    size: 10Gi
+    advancedMounts:
+      server:
+        main:
+          - path: /usr/src/app/external
+  machine-learning-cache:
+    # Optional: Set this to emptyDir to stop caching between pod restarts
+    type: persistentVolumeClaim
+    # existingClaim: "name-of-existing-claim" # Set an existing claim here to use it instead of creating a new one
+    storageClass: null # provide your storage class
+    accessMode: ReadWriteMany
+    size: 10Gi
+    advancedMounts:
+      machine-learning:
+        main:
+          - path: /cache
+
+ingress:
+  server:
+    enabled: false
+    annotations:
+      # proxy-body-size is set to 0 to remove the body limit on file uploads
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    hosts:
+      - host: immich.local
+        paths:
+          - path: "/"
+    tls: []
 
 # Dependencies
 
@@ -65,7 +219,7 @@ postgresql:
       auth:
         username: immich
         database: immich
-        password: immich
+        password: null
     security:
       allowInsecureImages: true
   primary:
@@ -74,6 +228,8 @@ postgresql:
         value: "HDD" # TODO this should be configurable on top level somewhere
       - name: POSTGRES_DB
         value: immich
+      - name: POSTGRESQL_STARTUP_TIMEOUT
+        value: "256" # time in seconds, default is 60
     customLivenessProbe:
       tcpSocket:
         port: tcp-postgresql
@@ -85,13 +241,30 @@ postgresql:
         port: tcp-postgresql
       failureThreshold: 256
     persistence:
-      enabled: false
+      enabled: true
+      # existingClaim: "name-of-existing-claim" # Set an existing claim here to use it instead of creating a new one
       accessMode: ReadWriteOnce
       size: 100Gi
-      storageClass: # provide your storage class
+      storageClass: null # provide your storage class
+    resources:
+      requests:
+        memory: "512Mi"
+      limits:
+        memory: "2Gi"
     initdb:
       scripts:
-        create-extensions.sql: |
+        # This should be unnecessary as we set the POSTGRES_DB env var, but for some reason sometimes the DB is not created
+        01-create-db.sql: |
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT FROM pg_database WHERE datname = 'immich'
+            ) THEN
+              CREATE DATABASE immich OWNER immich;
+            END IF;
+          END
+          $$;
+        02-create-extensions.sql: |
           CREATE EXTENSION cube;
           CREATE EXTENSION earthdistance;
           CREATE EXTENSION vectors;
@@ -101,43 +274,11 @@ postgresql:
 redis:
   enabled: true
   architecture: standalone
+  image:
+    # Using bitnamilegacy as bitnami does not provide new tagged redis images anymore. TODO: migrate to a new redis provider at some point
+    repository: bitnamilegacy/redis
   master:
     persistence:
       enabled: false
   auth:
     enabled: false
-
-# Immich components
-
-server:
-  enabled: true
-  image:
-    repository: ghcr.io/immich-app/immich-server
-    pullPolicy: IfNotPresent
-  ingress:
-    main:
-      enabled: false
-      annotations:
-        # proxy-body-size is set to 0 to remove the body limit on file uploads
-        nginx.ingress.kubernetes.io/proxy-body-size: "0"
-      hosts:
-        - host: immich.local
-          paths:
-            - path: "/"
-      tls: []
-
-machine-learning:
-  enabled: true
-  image:
-    repository: ghcr.io/immich-app/immich-machine-learning
-    pullPolicy: IfNotPresent
-  env:
-    TRANSFORMERS_CACHE: /cache
-  persistence:
-    cache:
-      enabled: true
-      size: 10Gi
-      # Optional: Set this to pvc to avoid downloading the ML models every start.
-      type: emptyDir
-      accessMode: ReadWriteMany
-      storageClass: # provide your storage class
