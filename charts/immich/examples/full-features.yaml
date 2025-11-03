@@ -1,0 +1,144 @@
+# Full Features Example
+# This example demonstrates advanced configuration with most optional features:
+# - Bundled PostgreSQL with SSD optimization and custom env vars
+# - Kubernetes secret for password management
+# - Custom Immich application configuration
+# - Resource limits
+# - Ingress enabled
+# - Pod Affinities
+# - Adjusted storage sizes
+
+# Immich configuration
+immich:
+  ## SSD-optimized PostgreSQL
+  database:
+    storageType: ssd
+
+  ## Enable monitoring
+  monitoring:
+    enabled: true
+
+  ## Custom application configuration
+  configuration:
+    image:
+      preview:
+        format: webp
+      fullsize:
+        enabled: true
+        format: webp
+        quality: 80
+    library:
+      scan:
+        cronExpression: '0 4 * * *'
+    metadata:
+      faces:
+        import: true
+    nightlyTasks:
+      clusterNewFaces: true
+      databaseCleanup: true
+      generateMemories: true
+      missingThumbnails: true
+      startTime: '03:00'
+      syncQuotaUsage: true
+    notifications:
+      smtp:
+        enabled: true
+        from: 'Immich <noreply@example.com>'
+        replyTo: ''
+        transport:
+          host: 'smtp.example.com'
+          ignoreCert: false
+          password: 'TODOCHANGEME'
+          port: 587
+          username: 'noreply@example.com'
+    oauth:
+      enabled: true
+      autoLaunch: true
+      autoRegister: true
+      buttonText: 'Login with Authentik'
+      clientId: 'XYZ-CLIENT-ID'
+      defaultStorageQuota: 50
+      issuerUrl: 'https://auth.example.com/application/o/immich/'
+      timeout: 30000
+    passwordLogin:
+      enabled: false
+    server:
+      externalDomain: 'https://immich.example.com'
+      loginPageMessage: ''
+    storageTemplate:
+      enabled: true
+
+# Common chart configuration
+
+## Enable ingress
+ingress:
+  server:
+    enabled: true
+    className: 'example-ingress-class'
+    hosts:
+      - host: immich.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+
+## Adjusted storage sizes
+persistence:
+  library:
+    storageClass: 'example-storage-class'
+    accessMode: ReadWriteMany
+    size: 1Ti
+  external:
+    storageClass: 'example-storage-class'
+    accessMode: ReadWriteMany
+    size: 500Gi
+  machine-learning-cache:
+    storageClass: 'example-storage-class'
+    accessMode: ReadWriteMany
+    size: 50Gi
+
+## Resource limits
+controllers:
+  server:
+    resources:
+      requests:
+        cpu: '500m'
+        memory: 2Gi
+      limits:
+        cpu: '2000m'
+        memory: 4Gi
+
+## Pod Affinities
+defaultPodOptions:
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/role
+                operator: In
+                values:
+                  - worker
+
+# PostgreSQL highly customized
+postgresql:
+  auth:
+    ## Use existing secret for password
+    existingSecret: immich-postgresql-secret
+  primary:
+    ## Custom environment variables (merged with chart defaults)
+    env:
+      POSTGRESQL_STARTUP_TIMEOUT: '512' # Override default
+      ## Add your own custom env vars here
+      MY_AMAZING_ENV_VAR: 'IS_GREAT'
+    persistence:
+      storageClass: 'example-ssd-storage-class'
+      accessMode: ReadWriteMany
+      size: 100Gi
+    resources:
+      requests:
+        cpu: '500m'
+        memory: 2Gi
+      limits:
+        cpu: '2000m'
+        memory: 4Gi
