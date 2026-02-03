@@ -182,9 +182,9 @@ immich:
 - Set database storage type at `immich.database.storageType` (options: `hdd` or `ssd`)
 - Remove custom `extraEnvVars` that are now managed automatically
 
-#### 5. External Database/Valkey Configuration
+#### 5. External Database/Redis Configuration
 
-External database and Valkey configuration is now centralized under the `immich` section.
+External database and Redis configuration is now centralized under the `immich` section.
 
 **Migration:**
 
@@ -204,17 +204,17 @@ immich:
     #       name: immich-db-secret
     #       key: password
 
-# NEW: External Valkey configuration
+# NEW: External Redis configuration
 immich:
-  valkey:
-    host: "valkey.example.com"
+  redis:
+    host: "redis.example.com"
     port: 6379
 
 # Don't forget to disable bundled services:
 postgresql:
   enabled: false
 
-valkey:
+redis:
   enabled: false
 ```
 
