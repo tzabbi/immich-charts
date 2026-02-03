@@ -20,7 +20,7 @@ The detailed migration guide below will help ensure you don't miss any changes w
 
 ### Overview
 
-Version 0.12.0 introduces valkey as a drop in replacement for redis. Redis has an reputation lost in the last years and even the official immich helm chart has switched to valkey.
+Version 0.12.0 introduces valkey as a drop in replacement for redis. Immich has moved from redis to valkey for caching and session management, and we want to align the Helm chart with this change.
 
 ### Breaking Changes
 
