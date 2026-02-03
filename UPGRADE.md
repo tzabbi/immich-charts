@@ -232,7 +232,7 @@ The PostgreSQL superuser (`postgres`) is now disabled by default to prevent Argo
 - [ ] Move database storage type to `immich.database.storageType`
 - [ ] Remove custom `controllers` configuration
 - [ ] Update Machine Learning enable/disable to use `immich.machineLearning.enabled`
-- [ ] If using external database/Valkey, migrate configuration to `immich.database` / `immich.valkey`
+- [ ] If using external database/Redis, migrate configuration to `immich.database` / `immich.redis`
 
 ### Example Migration
 
