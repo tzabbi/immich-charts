@@ -207,12 +207,6 @@ postgresql:
 
 valkey:
   enabled: true
-  # Use standalone architecture (single instance, no replicas)
-  architecture: standalone
   # Disable auth for internal Valkey (auth is typically only needed for external Valkey)
   auth:
     enabled: false
-  # Disable persistence for internal Valkey (ephemeral cache is sufficient)
-  master:
-    persistence:
-      enabled: false
