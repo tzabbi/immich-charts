@@ -37,6 +37,9 @@ immich:
   #         password: 'TODOCHANGEME'
   #         port: 587
   #         username: 'noreply@example.com'
+  # updateStrategy of the deployment for the immich and ml controller
+  controller:
+    updateStrategy: RollingUpdate
 
   # Machine Learning configuration
   machineLearning:
