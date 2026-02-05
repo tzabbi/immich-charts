@@ -84,7 +84,7 @@ persistence:
 controllers:
   server:
     enabled: true
-    strategy: RollingUpdate
+    strategy: {{ .Values.immich.controller.updateStrategy }}
     replicas: 1
     containers:
       main:
@@ -145,7 +145,7 @@ controllers:
 
   machine-learning:
     enabled: {{ .Values.immich.machineLearning.enabled }}
-    strategy: RollingUpdate
+    strategy: {{ .Values.immich.controller.updateStrategy }}
     replicas: 1
     containers:
       main:

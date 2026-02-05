@@ -8,7 +8,7 @@
 # Users should not override this unless they know what they're doing
 image:
   repository: ghcr.io/immich-app/immich-server
-  tag: v2.5.2
+  tag: v2.5.3
 
 immich:
   # configuration is immich-config.json converted to yaml
@@ -37,6 +37,9 @@ immich:
   #         password: 'TODOCHANGEME'
   #         port: 587
   #         username: 'noreply@example.com'
+  # updateStrategy of the deployment for the immich and ml controller
+  controller:
+    updateStrategy: RollingUpdate
 
   # Machine Learning configuration
   machineLearning:
