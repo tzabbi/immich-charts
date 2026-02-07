@@ -90,6 +90,14 @@ route:
         namespace: your-gateway-namespace
     hostnames:
       - immich.yourdomain.com
+    rules:
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /
+        backendRefs:
+          - name: server
+            port: 2283
 
 ## Adjusted storage sizes
 persistence:
