@@ -81,6 +81,16 @@ ingress:
           - path: /
             pathType: Prefix
 
+## Enable httpRoute
+route:
+  main:
+    enabled: true
+    parentRefs:
+      - name: your-gateway
+        namespace: your-gateway-namespace
+    hostnames:
+      - immich.yourdomain.com
+
 ## Adjusted storage sizes
 persistence:
   library:
