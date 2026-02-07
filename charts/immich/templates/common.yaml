@@ -103,7 +103,7 @@ controllers:
         env:
           {{- include "immich.common.env" . | nindent 10 }}
           {{- if .Values.immich.monitoring.enabled }}
-          IMMICH_TELEMETRY_INCLUDE: 'all'
+          IMMICH_TELEMETRY_INCLUDE: all
           {{- end }}
           {{- if not (eq (typeOf .Values.immich.configuration) "<nil>") }}
           IMMICH_CONFIG_FILE: /config/immich-config.yaml
