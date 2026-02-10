@@ -139,14 +139,6 @@ route:
       - ''
     # Optional: if you want to specify additional labels
     labels: {}
-    # rules:
-    #   - matches:
-    #       - path:
-    #           type: PathPrefix
-    #           value: /
-    #     backendRefs:
-    #       - name: server
-    #         port: 2283
 
 # Dependencies - PostgreSQL and Valkey
 # Set enabled: false to use external services

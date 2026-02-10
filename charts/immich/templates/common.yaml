@@ -262,8 +262,11 @@ route:
               type: PathPrefix
               value: /
         backendRefs:
-          - name: server
+          - group: ''
+            kind: Service
+            name: server
             port: 2283
+            weight: 1
 {{- end }}
 {{- end -}}
 
