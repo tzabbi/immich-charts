@@ -126,7 +126,7 @@ ingress:
     tls: []
 
 # Gateway API support (ensure that you have installed an api-gateway controller
-# and created a gateway-class and a gateway
+# and created a gateway-class and a gateway)
 route:
   main:
     enabled: false
