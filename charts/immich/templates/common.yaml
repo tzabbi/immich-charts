@@ -81,6 +81,27 @@ persistence:
     enabled: false
   {{- end }}
 
+# Disable routes with invalid/empty parentRef names
+{{- if .Values.route }}
+route:
+  {{- range $key, $value := .Values.route }}
+  {{- if $value.enabled }}
+  {{- $hasValidParentRef := false }}
+  {{- if $value.parentRefs }}
+  {{- range $value.parentRefs }}
+  {{- if .name }}
+  {{- $hasValidParentRef = true }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if not $hasValidParentRef }}
+  {{ $key }}:
+    enabled: false
+  {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+
 controllers:
   server:
     enabled: true
@@ -252,6 +273,27 @@ ingress:
               port: http
     tls:
       {{- .Values.ingress.server.tls | toYaml | nindent 6 }}
+
+{{- $serviceName := printf "%s-server" .Release.Name }}
+
+{{- if and .Values.route .Values.route.server }}
+route:
+  server:
+    {{- if not .Values.route.server.rules }}
+    rules:
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /
+        backendRefs:
+          - group: ''
+            kind: Service
+            name: {{ $serviceName }}
+            port: 2283
+            weight: 1
+    {{- end }}
+{{- end }}
+
 {{- end -}}
 
 {{- /* Merge hardcodedValues which includes auto-disable logic */ -}}

@@ -125,6 +125,21 @@ ingress:
           - path: '/'
     tls: []
 
+# Gateway API support (ensure that you have installed an api-gateway controllers:
+# and created a gateway-class and a gateway
+route:
+  server:
+    enabled: true
+    kind: HTTPRoute
+    parentRefs:
+      - name: '' # your preinstalled gateway
+        namespace: '' # Optional, but highly recommended the gateway in your gateway ns
+        sectionName: http # Optional, if you want to a specific listener
+    hostnames:
+      - ''
+    # Optional: if you want to specify additional labels
+    labels: {}
+
 # Dependencies - PostgreSQL and Valkey
 # Set enabled: false to use external services
 # When disabled, configure connection details in immich.database / immich.valkey above
